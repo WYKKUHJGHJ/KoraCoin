@@ -1,7 +1,6 @@
-// pages/index.tsx
 import Image from 'next/image';
 
-const HomePage: React.FC = () => {
+const HomePage = () => {
   return (
     <div className="relative flex items-center justify-center min-h-[80vh] bg-[url('/images/hero-bg.jpg')] bg-cover bg-center">
       {/* Overlay backdrop */}
