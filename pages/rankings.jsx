@@ -1,16 +1,4 @@
-// pages/rankings.tsx
-import { GetStaticProps } from 'next';
-
-type CoinData = { name: string; market_cap: number; total_volume: number };
-type ExchangeData = { name: string; trade_volume_24h_btc: number };
-
-type RankingsPageProps = {
-  topByMarketCap: CoinData[];
-  topByVolume: CoinData[];
-  topExchanges: { name: string; volumeUSD: number }[];
-};
-
-const RankingsPage: React.FC<RankingsPageProps> = ({ topByMarketCap, topByVolume, topExchanges }) => {
+const RankingsPage = ({ topByMarketCap, topByVolume, topExchanges }) => {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-6">Crypto Market Rankings</h1>
@@ -44,32 +32,32 @@ const RankingsPage: React.FC<RankingsPageProps> = ({ topByMarketCap, topByVolume
           </li>
         ))}
       </ol>
+
       <p className="text-sm text-gray-400">
-        Data source: CoinGecko API [oai_citation:24‡algotrading101.com](https://algotrading101.com/learn/coingecko-api-guide/#:~:text=The%20CoinGecko%20API%20allows%20us,data%20from%20CoinGecko%20using%20code) (updated every few minutes)
+        Data source: CoinGecko API (updated every few minutes)
       </p>
     </div>
   );
 };
 
-export const getStaticProps: GetStaticProps<RankingsPageProps> = async () => {
-  // Fetch top 10 coins by market cap
+export async function getStaticProps() {
   const res1 = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1');
-  const coinsByCap: CoinData[] = await res1.json();
-  // Fetch top 10 coins by 24h volume
+  const coinsByCap = await res1.json();
+
   const res2 = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=volume_desc&per_page=10&page=1');
-  const coinsByVol: CoinData[] = await res2.json();
-  // Fetch top 5 exchanges by volume (CoinGecko returns volume in BTC)
+  const coinsByVol = await res2.json();
+
   const res3 = await fetch('https://api.coingecko.com/api/v3/exchanges?per_page=5&page=1');
-  const exchanges: ExchangeData[] = await res3.json();
-  // Get current BTC price (to convert BTC volume to USD)
-  const btcPrice = coinsByCap.find(c => c.name.toLowerCase() === 'bitcoin')?.market_cap / coinsByCap.find(c => c.name.toLowerCase() === 'bitcoin')?.total_volume!;
-  // Alternatively, for accuracy we could call /simple/price for BTC, but this approximation suffices.
+  const exchanges = await res3.json();
+
+  const btc = coinsByCap.find(c => c.name.toLowerCase() === 'bitcoin');
+  const btcPrice = btc?.market_cap / btc?.total_volume || 0;
 
   const topExchanges = exchanges.map(exch => {
     const volumeBTC = exch.trade_volume_24h_btc || 0;
     return {
       name: exch.name,
-      volumeUSD: volumeBTC * (btcPrice || 0)
+      volumeUSD: volumeBTC * btcPrice
     };
   });
 
@@ -79,8 +67,8 @@ export const getStaticProps: GetStaticProps<RankingsPageProps> = async () => {
       topByVolume: coinsByVol,
       topExchanges
     },
-    revalidate: 300  // update every 5 minutes
+    revalidate: 300
   };
-};
+}
 
 export default RankingsPage;
